@@ -1,6 +1,8 @@
 // Load environment variables from .env file
 require('dotenv').config();
 
+const cors = require('cors'); // Import CORS
+
 // Database connection
 require('./config/db'); 
 
@@ -9,11 +11,20 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3001;
 
+// CORS configuration
+const corsOptions = {
+    origin: ['http://localhost:3000', 'https://example.com'], // Allow specific domains
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
+    allowedHeaders: ['Content-Type', 'Authorization'], // Allow specific headers
+    credentials: true, // Allow cookies or authorization headers
+};
+
 // Import User Router
 const UserRouter = require('./api/User');
 
 // Middleware for parsing JSON request bodies
 app.use(express.json());
+app.use(cors(corsOptions)); 
 
 // Set up routes
 app.use('/user', UserRouter);
