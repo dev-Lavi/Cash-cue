@@ -1,6 +1,22 @@
-package-lock.json
-node_modules/*
-.idea/*
+# Node.js dependencies
+node_modules/
 
-images/*
-!images/.gitkeep
+# Logs
+*.log
+
+# Environment files
+.env
+
+# npm debug files
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Build directories
+dist/
