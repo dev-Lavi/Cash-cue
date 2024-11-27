@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken'); // For creating and verifying JWTs
+const nodemailer = require('nodemailer');
 
+const JWT_SECRET = "your_jwt_secret"; // Replace with a strong secret key
+const JWT_EXPIRES_IN = "15m";
 const User = require('./../models/User');
 
 // password handler
@@ -146,5 +150,134 @@ router.post('/signin', (req, res) => {
         })
     }
 })
+
+// Forgot Password: Send Reset Token
+router.post('/forgot-password', (req, res) => {
+    const { email } = req.body;
+
+    if (!email || email.trim() === "") {
+        return res.json({
+            status: "FAILED",
+            message: "Email is required!"
+        });
+    }
+
+    User.findOne({ email }).then(user => {
+        if (!user) {
+            return res.json({
+                status: "FAILED",
+                message: "No user found with this email!"
+            });
+        }
+
+                // Generate a JWT token
+                const resetToken = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+                // Send reset email
+                const transporter = nodemailer.createTransport({
+                    service: "gmail",
+                    auth: {
+                        user: process.env.EMAIL, //my email
+                        pass: process.env.EMAIL_PASSWORD // my email password in an environment variable
+                    }
+                });
+        
+                const mailOptions = {
+                    from: process.env.EMAIL,
+                    to: email,
+                    subject: "Password Reset",
+                    html: `
+                        <p>You requested a password reset</p>
+                        <p>Click the link below to reset your password:</p>
+                        <a href="http://localhost:3001/reset-password/${resetToken}">Reset Password</a>
+                        <p>This link will expire in 15 minutes.</p>
+                    `
+                };
+
+                transporter.sendMail(mailOptions, (err, info) => {
+                    if (err) {
+                        return res.json({
+                            status: "FAILED",
+                            message: "Failed to send email!",
+                            error: err
+                        });
+                    }
+        
+                    res.json({
+                        status: "SUCCESS",
+                        message: "Password reset email sent!"
+                    });
+                });
+            }).catch(err => {
+                res.json({
+                    status: "FAILED",
+                    message: "An error occurred while finding user!",
+                    error: err
+                });
+            });
+        });
+
+// Reset Password: Update the Password
+router.post('/reset-password/:token', (req, res) => {
+    const { token } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 8) {
+        return res.json({
+            status: "FAILED",
+            message: "Password must be at least 8 characters long!"
+        });
+    }
+        
+// Verify the JWT token
+jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+        return res.json({
+            status: "FAILED",
+            message: "Invalid or expired reset token!"
+        });
+    }
+
+    // Token is valid, find the user and update the password
+    User.findById(decoded.id).then(user => {
+        if (!user) {
+            return res.json({
+                status: "FAILED",
+                message: "User not found!"
+            });
+        }
+
+        // Hash the new password
+        bcrypt.hash(newPassword, 10).then(hashedPassword => {
+            user.password = hashedPassword;
+
+            user.save().then(() => {
+                res.json({
+                    status: "SUCCESS",
+                    message: "Password reset successful!"
+                });
+            }).catch(err => {
+                res.json({
+                    status: "FAILED",
+                    message: "An error occurred while updating the password!",
+                    error: err
+                });
+            });
+        }).catch(err => {
+            res.json({
+                status: "FAILED",
+                message: "An error occurred while hashing the password!",
+                error: err
+            });
+        });
+    }).catch(err => {
+        res.json({
+            status: "FAILED",
+            message: "An error occurred while finding the user!",
+            error: err
+        });
+    });
+});
+});
 
 module.exports = router;
