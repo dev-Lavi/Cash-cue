@@ -3,8 +3,6 @@ require('dotenv').config();
 
 const cors = require('cors'); // Import CORS
 
-app.use(cors(corsOptions)); 
-
 // Database connection
 require('./config/db'); 
 
@@ -13,15 +11,15 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3001;
 
-// CORS configuration
-const corsOptions = {
-    origin: ['http://localhost:3001', 'https://cash-cue.onrender.com'], // Allow specific domains
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Allow specific headers
-    credentials: true, // Allow cookies or authorization headers
-};
+// // CORS configuration
+// const corsOptions = {
+//     origin: ['http://localhost:3001', 'https://cash-cue.onrender.com'], // Allow specific domains
+//     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
+//     allowedHeaders: ['Content-Type', 'Authorization'], // Allow specific headers
+//     credentials: true, // Allow cookies or authorization headers
+// };
 
-app.use(cors(corsOptions)); 
+app.use(cors()); 
 
 // Import User Router
 const UserRouter = require('./api/User');
