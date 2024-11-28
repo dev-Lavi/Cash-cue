@@ -11,134 +11,162 @@ const User = require('./../models/User');
 const bcrypt = require('bcryptjs');
 
 //signup
-router.post('/signup', (req, res) => {
+router.post('/signup', async (req, res) => {
     let { name, email, password } = req.body;
     name = name.trim();
     email = email.trim();
     password = password.trim();
 
-    if (name == "" || email == "" || password == "") {
-        res.json({
-            status: "FAILED",
-            message: "Empty input fields!"
-        });
-    } else if (!/^[a-zA-Z]+(\s[a-zA-Z]+)*$/.test(name)) {
-        res.json({
-            status: "FAILED",
-            message: "Invalid name entered"
-        });
-    } else if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-        res.json({
-            status: "FAILED",
-            message: "Invalid email entered"
-        });
-    } else if (password.length < 8) {
-        res.json({
-            status: "FAILED",
-            message: "Password is too short!"
-        });
-    } else {
-        // Check if user already exists
-        User.find({ email }).then(result => {
-            if (result.length) {
-                // User already exists
-                res.json({
-                    status: "FAILED",
-                    message: "User with the provided email already exists"
-                });
-            } else {
-                // Try to create a new user
-                const saltRounds = 10;
-                bcrypt.hash(password, saltRounds).then(hashedPassword => {
-                    const newUser = new User({
-                        name,
-                        email,
-                        password: hashedPassword
-                    });
+    if (!name || !email || !password) {
+        return res.json({ status: "FAILED", message: "Empty input fields!" });
+    }
 
-                    newUser.save().then(result => {
-                        res.json({
-                            status: "SUCCESS",
-                            message: "Signup successful",
-                            data: result
-                        });
-                    }).catch(err => {
-                        res.json({
-                            status: "FAILED",
-                            message: "An error occurred while saving user account!"
-                        });
-                    });
-                }).catch(err => {
-                    res.json({
-                        status: "FAILED",
-                        message: "An error occurred while hashing password!"
-                    });
-                });
-            }
-        }).catch(err => {
-            console.log(err);
-            res.json({
+    if (!/^[a-zA-Z]+(\s[a-zA-Z]+)*$/.test(name)) {
+        return res.json({ status: "FAILED", message: "Invalid name entered" });
+    }
+
+    if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+        return res.json({ status: "FAILED", message: "Invalid email entered" });
+    }
+
+    if (password.length < 8) {
+        return res.json({ status: "FAILED", message: "Password is too short!" });
+    }
+
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.json({
                 status: "FAILED",
-                message: "An error occurred while checking for existing user!"
+                message: "User with the provided email already exists",
             });
+        }
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create a new user
+        const newUser = new User({ name, email, password: hashedPassword });
+        const savedUser = await newUser.save();
+
+        // Generate verification token
+        const verificationToken = jwt.sign(
+            { id: savedUser._id, email: savedUser.email },
+            JWT_SECRET,
+            { expiresIn: "1h" } // Token valid for 1 hour
+        );
+
+        // Send verification email
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                user: process.env.EMAIL, // Your email
+                pass: process.env.EMAIL_PASSWORD, // Your email password
+            },
+        });
+
+        const verificationLink = `http://localhost:3001/user/verify-email/${verificationToken}`;
+
+        const mailOptions = {
+            from: process.env.EMAIL,
+            to: email,
+            subject: "Verify Your Email Address",
+            html: `
+                <p>Hi ${name},</p>
+                <p>Thank you for signing up. Please verify your email by clicking the link below:</p>
+                <a href="${verificationLink}">Verify Email</a>
+                <p>This link will expire in 1 hour.</p>
+            `,
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        return res.json({
+            status: "SUCCESS",
+            message: "Signup successful! Verification email sent.",
+        });
+    } catch (error) {
+        console.error(error);
+        return res.json({
+            status: "FAILED",
+            message: "An error occurred during signup. Please try again.",
+        });
+    }
+});
+
+//verify gmail by token
+router.get('/verify-email/:token', async (req, res) => {
+    const { token } = req.params;
+
+    try {
+        // Verify the token
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        // Find the user by ID
+        const user = await User.findById(decoded.id);
+        if (!user) {
+            return res.json({
+                status: "FAILED",
+                message: "Invalid or expired token!",
+            });
+        }
+
+        // Mark the user as verified
+        user.isVerified = true;
+        await user.save();
+
+        return res.json({
+            status: "SUCCESS",
+            message: "Email verified successfully!",
+        });
+    } catch (error) {
+        console.error(error);
+        return res.json({
+            status: "FAILED",
+            message: "Invalid or expired token!",
         });
     }
 });
 
 //signin
-router.post('/signin', (req, res) => {
-    let {email, password} = req.body;
-    email = email.trim();  
-    password = password.trim();
+router.post('/signin', async (req, res) => {
+    const { email, password } = req.body;
 
-    if (email == "" || password == "") {
-        res.json({
-            status: "FAILED",
-            message: "Empty credentials supplied"
-        })
-    } else {
-        //check if user exist
-        User.find({email}).then(data=> {
-            if (data.length) {
-                //user exists
-
-                const hashedPassword = data[0].password;
-                bcrypt.compare(password, hashedPassword).then(result => {
-                    if (result) {
-                        //password match
-                        res.json({
-                            status: "SUCCESS",
-                            message: "Signin successful",
-                            data: data
-                        })
-                    } else {
-                        res.json({
-                            status: "FAILED",
-                            message: "Invalid password entered!"
-                        })
-                    }
-                })
-                .catch(err => {
-                    res.json({
-                        status: "FAILED",
-                        message: "An error occured while comparing passwords"
-                    })
-                })
-            } else {
-                res.json({
-                    status: "FAILED",
-                    message: "Invalid credentials entered!"
-                })
-            }
-        })
-        .catch(err => {
-            res.json({
-                status: "FAILED",
-                message: "An error occured while checking for existing user"
-            })
-        })
+    if (!email || !password) {
+        return res.json({ status: "FAILED", message: "Empty credentials supplied!" });
     }
-})
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.json({ status: "FAILED", message: "Invalid credentials!" });
+        }
+
+        if (!user.isVerified) {
+            return res.json({
+                status: "FAILED",
+                message: "Email not verified. Please check your email for the verification link.",
+            });
+        }
+
+        const isPasswordMatch = await bcrypt.compare(password, user.password);
+        if (!isPasswordMatch) {
+            return res.json({ status: "FAILED", message: "Invalid password!" });
+        }
+
+        return res.json({
+            status: "SUCCESS",
+            message: "Sign-in successful!",
+            data: user,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.json({
+            status: "FAILED",
+            message: "An error occurred during sign-in.",
+        });
+    }
+});
 
 // Forgot Password: Send Reset Token
 router.post('/forgot-password', (req, res) => {
