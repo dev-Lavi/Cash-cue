@@ -13,9 +13,10 @@ const port = process.env.PORT || 3001;
 
 // CORS configuration
 const corsOptions = {
-    origin: '*', // Allows all origins
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: ['http://localhost:3001', 'https://cash-cue.onrender.com'], // Allow specific domains
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
+    allowedHeaders: ['Content-Type', 'Authorization'], // Allow specific headers
+    credentials: true, // Allow cookies or authorization headers
 };
 
 app.use(cors(corsOptions)); 
