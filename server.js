@@ -19,7 +19,7 @@ const UserRouter = require('./api/User');
 
 // Middleware for parsing JSON request bodies
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
 
 // Set up routes
 app.use('/user', UserRouter);
