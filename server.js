@@ -19,7 +19,10 @@ const port = process.env.PORT || 3001;
 //     credentials: true, // Allow cookies or authorization headers
 // };
 
-app.use(cors()); 
+
+
+app.use(cors({ origin: 'http://localhost:5173', credentials: true,
+}));
 
 // Import User Router
 const UserRouter = require('./api/User');
