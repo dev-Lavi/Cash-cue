@@ -11,8 +11,7 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3001;
 
-app.use(cors({ origin: 'http://localhost:5173', credentials: true,
-}));
+
 
 // Import User Router
 const UserRouter = require('./api/User');
