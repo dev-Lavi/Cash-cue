@@ -30,13 +30,7 @@ app.get('/', (req, res) => {
 });
 
 // Error handling middleware for unexpected errors
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({
-        status: "FAILED",
-        message: "An internal server error occurred"
-    });
-});
+
 
 // Start the server
 app.listen(port, () => {
