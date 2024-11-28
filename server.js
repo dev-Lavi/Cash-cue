@@ -2,7 +2,7 @@
 require('dotenv').config();
 
 const cors = require('cors'); // Import CORS
-
+app.use(cors({ origin: '*' })); // Update the origin as needed for security
 // Database connection
 require('./config/db'); 
 
