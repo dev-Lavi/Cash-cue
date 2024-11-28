@@ -2,7 +2,7 @@
 require('dotenv').config();
 
 const cors = require('cors'); // Import CORS
-app.use(cors({ origin: '*' })); // Update the origin as needed for security
+
 // Database connection
 require('./config/db'); 
 
@@ -11,7 +11,7 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3001;
 
-
+app.use(cors({})); // Update the origin as needed for security
 
 // Import User Router
 const UserRouter = require('./api/User');
