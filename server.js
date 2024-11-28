@@ -1,17 +1,21 @@
 // Load environment variables from .env file
 require('dotenv').config();
 
+const express = require('express');
 const cors = require('cors'); // Import CORS
 
 // Database connection
 require('./config/db'); 
 
 // Import necessary modules
-const express = require('express');
+
 const app = express();
 const port = process.env.PORT || 3001;
 
-app.use(cors({})); // Update the origin as needed for security
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true,  
+}));
 
 // Import User Router
 const UserRouter = require('./api/User');
