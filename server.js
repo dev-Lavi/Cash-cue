@@ -13,18 +13,19 @@ const port = process.env.PORT || 3001;
 
 // CORS configuration
 const corsOptions = {
-    origin: ['http://localhost:3001', 'https://cash-cue.onrender.com'], // Allow specific domains
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Allow specific headers
-    credentials: true, // Allow cookies or authorization headers
+    origin: '*', // Allows all origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 };
+
+app.use(cors(corsOptions)); 
 
 // Import User Router
 const UserRouter = require('./api/User');
 
 // Middleware for parsing JSON request bodies
 app.use(express.json());
-app.use(cors(corsOptions)); 
+
 
 // Set up routes
 app.use('/user', UserRouter);
