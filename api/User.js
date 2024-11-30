@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken'); // For creating and verifying JWTs
 const nodemailer = require('nodemailer');
 
 const JWT_SECRET = "your_jwt_secret"; // Replace with a strong secret key
-const JWT_EXPIRES_IN = "5m";
+const JWT_EXPIRES_IN = "10h";
 const User = require('./../models/User');
 
 // password handler
