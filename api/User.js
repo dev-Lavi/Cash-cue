@@ -18,26 +18,34 @@ router.post('/signup', async (req, res) => {
     password = password.trim();
 
     if (!name || !email || !password) {
-        return res.json({ status: "FAILED", message: "Empty input fields!" });
+        return res.json({ status: "FAILED", errorCode: 1001, message: "Empty input fields!" });
     }
 
     if (!/^[a-zA-Z]+(\s[a-zA-Z]+)*$/.test(name)) {
-        return res.json({ status: "FAILED", message: "Invalid name entered" });
+        return res.json({ status: "FAILED", errorCode: 1002, message: "Invalid name entered" });
     }
 
     if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-        return res.json({ status: "FAILED", message: "Invalid email entered" });
+        return res.json({ status: "FAILED", errorCode: 1003, message: "Invalid email entered" });
     }
 
-    if (password.length < 8) {
-        return res.json({ status: "FAILED", message: "Password is too short!" });
+    // Password validation: At least 8 characters, 1 number, and 1 symbol
+    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+    if (!passwordRegex.test(password)) {
+        return res.json({
+            status: "FAILED",
+            errorCode: 1004,
+            message: "Password must be at least 8 characters long and include at least one number and one symbol.",
+        });
     }
+
 
     try {
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.json({
                 status: "FAILED",
+                errorCode: 1005,
                 message: "User with the provided email already exists",
             });
         }
@@ -89,6 +97,7 @@ router.post('/signup', async (req, res) => {
         console.error(error);
         return res.json({
             status: "FAILED",
+            errorCode: 1006,
             message: "An error occurred during signup. Please try again.",
         });
     }
@@ -107,6 +116,7 @@ router.get('/verify-email/:token', async (req, res) => {
         if (!user) {
             return res.json({
                 status: "FAILED",
+                errorCode: 2001,
                 message: "Invalid or expired token!",
             });
         }
@@ -123,6 +133,7 @@ router.get('/verify-email/:token', async (req, res) => {
         console.error(error);
         return res.json({
             status: "FAILED",
+            errorCode: 2002,
             message: "Invalid or expired token!",
         });
     }
@@ -133,25 +144,26 @@ router.post('/signin', async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-        return res.json({ status: "FAILED", message: "Empty credentials supplied!" });
+        return res.json({ status: "FAILED", errorCode: 3001, message: "Empty credentials supplied!" });
     }
 
     try {
         const user = await User.findOne({ email });
         if (!user) {
-            return res.json({ status: "FAILED", message: "Invalid credentials!" });
+            return res.json({ status: "FAILED", errorCode: 3002, message: "Invalid credentials!" });
         }
 
         if (!user.isVerified) {
             return res.json({
                 status: "FAILED",
+                errorCode: 3003,
                 message: "Email not verified. Please check your email for the verification link.",
             });
         }
 
         const isPasswordMatch = await bcrypt.compare(password, user.password);
         if (!isPasswordMatch) {
-            return res.json({ status: "FAILED", message: "Invalid password!" });
+            return res.json({ status: "FAILED", errorCode: 3004, message: "Invalid password!" });
         }
 
         return res.json({
@@ -163,6 +175,7 @@ router.post('/signin', async (req, res) => {
         console.error(error);
         return res.json({
             status: "FAILED",
+            errorCode: 3005,
             message: "An error occurred during sign-in.",
         });
     }
@@ -175,6 +188,7 @@ router.post('/forgot-password', (req, res) => {
     if (!email || email.trim() === "") {
         return res.json({
             status: "FAILED",
+            errorCode: 4001,
             message: "Email is required!"
         });
     }
@@ -183,6 +197,7 @@ router.post('/forgot-password', (req, res) => {
         if (!user) {
             return res.json({
                 status: "FAILED",
+                errorCode: 4002,
                 message: "No user found with this email!"
             });
         }
@@ -215,6 +230,7 @@ router.post('/forgot-password', (req, res) => {
                     if (err) {
                         return res.json({
                             status: "FAILED",
+                            errorCode: 4003,
                             message: "Failed to send email!",
                             error: err
                         });
@@ -228,6 +244,7 @@ router.post('/forgot-password', (req, res) => {
             }).catch(err => {
                 res.json({
                     status: "FAILED",
+                    errorCode: 4004,
                     message: "An error occurred while finding user!",
                     error: err
                 });
@@ -239,10 +256,13 @@ router.post('/reset-password/:token', (req, res) => {
     const { token } = req.params;
     const { newPassword } = req.body;
 
-    if (!newPassword || newPassword.length < 8) {
+    // Password validation: At least 8 characters, 1 number, and 1 symbol
+    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+    if (!newPassword || !passwordRegex.test(newPassword)) {
         return res.json({
             status: "FAILED",
-            message: "Password must be at least 8 characters long!"
+            errorCode: 5001,
+            message: "Password must be at least 8 characters long and include at least one number and one symbol!"
         });
     }
         
@@ -251,6 +271,7 @@ jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) {
         return res.json({
             status: "FAILED",
+            errorCode: 5002,
             message: "Invalid or expired reset token!"
         });
     }
@@ -260,6 +281,7 @@ jwt.verify(token, JWT_SECRET, (err, decoded) => {
         if (!user) {
             return res.json({
                 status: "FAILED",
+                errorCode: 5003,
                 message: "User not found!"
             });
         }
@@ -276,6 +298,7 @@ jwt.verify(token, JWT_SECRET, (err, decoded) => {
             }).catch(err => {
                 res.json({
                     status: "FAILED",
+                    errorCode: 5004,
                     message: "An error occurred while updating the password!",
                     error: err
                 });
@@ -283,6 +306,7 @@ jwt.verify(token, JWT_SECRET, (err, decoded) => {
         }).catch(err => {
             res.json({
                 status: "FAILED",
+                errorCode: 5005,
                 message: "An error occurred while hashing the password!",
                 error: err
             });
@@ -290,6 +314,7 @@ jwt.verify(token, JWT_SECRET, (err, decoded) => {
     }).catch(err => {
         res.json({
             status: "FAILED",
+            errorCode: 5006,
             message: "An error occurred while finding the user!",
             error: err
         });
