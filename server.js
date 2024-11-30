@@ -3,6 +3,8 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors'); // Import CORS
+const session = require('express-session');
+const passport = require('passport'); // Import Passport
 
 // Database connection
 require('./config/db'); 
@@ -16,6 +18,19 @@ app.use(cors({
     origin: 'http://localhost:5173',
     credentials: true,  
 }));
+
+// Set up session middleware to handle OAuth session data
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET || 'default_secret', // Set a session secret
+        resave: false,
+        saveUninitialized: false,
+    })
+);
+
+// Initialize Passport and session
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Import User Router
 const UserRouter = require('./api/User');

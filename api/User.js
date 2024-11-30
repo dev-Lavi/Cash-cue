@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken'); // For creating and verifying JWTs
+const passport = require('passport'); // Add Passport
 const nodemailer = require('nodemailer');
 
 const JWT_SECRET = "your_jwt_secret"; // Replace with a strong secret key
@@ -9,6 +10,56 @@ const User = require('./../models/User');
 
 // password handler
 const bcrypt = require('bcryptjs');
+
+
+// OAuth Routes for Google (or other providers)
+router.get('/auth/google', passport.authenticate('google', {
+    scope: ['profile', 'email'],
+}));
+
+router.get('/auth/google/callback', passport.authenticate('google', {
+    failureRedirect: '/login',
+    session: true,
+}), (req, res) => {
+    // If successful, create a JWT token for the user
+    const token = jwt.sign({ id: req.user._id, email: req.user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    res.json({
+        status: "SUCCESS",
+        message: "Authenticated via Google",
+        token,
+    });
+});
+
+// Facebook OAuth Route (similar to Google OAuth)
+router.get('/auth/facebook', passport.authenticate('facebook'));
+
+router.get('/auth/facebook/callback', passport.authenticate('facebook', {
+    failureRedirect: '/login',
+    session: true,
+}), (req, res) => {
+    // Create JWT token after successful authentication
+    const token = jwt.sign({ id: req.user._id, email: req.user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    res.json({
+        status: "SUCCESS",
+        message: "Authenticated via Facebook",
+        token,
+    });
+});
+
+// Twitter OAuth
+router.get('/auth/twitter', passport.authenticate('twitter'));
+
+router.get('/auth/twitter/callback', passport.authenticate('twitter', { 
+    failureRedirect: '/login',
+        session: true, 
+    }), (req, res) => {
+        const token = jwt.sign({ id: req.user._id, email: req.user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+        res.json({
+            status: 'SUCCESS',
+            message: 'Twitter authentication successful!',
+            token,
+        });
+    });
 
 //signup
 router.post('/signup', async (req, res) => {
@@ -320,6 +371,22 @@ jwt.verify(token, JWT_SECRET, (err, decoded) => {
         });
     });
 });
+});
+
+// Logout route
+router.get('/logout', (req, res) => {
+    req.logout((err) => {
+        if (err) {
+            return res.json({
+                status: 'FAILED',
+                message: 'Error during logout!',
+            });
+        }
+        res.json({
+            status: 'SUCCESS',
+            message: 'Logged out successfully!',
+        });
+    });
 });
 
 module.exports = router;
