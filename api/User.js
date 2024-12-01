@@ -30,7 +30,7 @@ router.get('/auth/google/callback', passport.authenticate('google', {
     });
 });
 
-// Facebook OAuth Route (similar to Google OAuth)
+// Facebook OAuth Route 
 router.get('/auth/facebook', passport.authenticate('facebook'));
 
 router.get('/auth/facebook/callback', passport.authenticate('facebook', {
@@ -272,7 +272,7 @@ router.post('/forgot-password', (req, res) => {
                     html: `
                         <p>You requested a password reset</p>
                         <p>Click the link below to reset your password:</p>
-                        <a href="https://cash-cue.onrender.com/user/reset-password//${resetToken}">Reset Password</a>
+                        <a href="https://cash-cue.onrender.com/user/reset-password/${resetToken}">Reset Password</a>
                         <p>This link will expire in 15 minutes.</p>
                     `
                 };

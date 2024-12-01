@@ -1,5 +1,6 @@
 // Load environment variables 
 require('dotenv').config();
+require('./config/passport');
 
 const express = require('express');
 const cors = require('cors'); // Import CORS
@@ -34,6 +35,7 @@ app.use(passport.session());
 
 // Import User Router
 const UserRouter = require('./api/User');
+console.log('User routes loaded');
 
 // Middleware for parsing JSON request bodies
 app.use(express.json());

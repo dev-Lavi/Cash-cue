@@ -2,7 +2,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const TwitterStrategy = require('passport-twitter').Strategy; // Import Twitter strategy
-const User = require('./models/User'); // Adjust according to your path
+const User = require('../models/User'); // Adjust according to your path
 
 // Configure Passport to use Google OAuth
 passport.use(new GoogleStrategy({
@@ -29,24 +29,30 @@ passport.use(new GoogleStrategy({
 
 // Configure Passport to use Facebook OAuth
 passport.use(new FacebookStrategy({
-    clientID: process.env.FACEBOOK_APP_ID,
-    clientSecret: process.env.FACEBOOK_APP_SECRET,
+    clientID: process.env.FACEBOOK_CLIENT_ID,
+    clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
     callbackURL: "https://cash-cue.onrender.com/user/auth/facebook/callback",
-    profileFields: ['id', 'emails', 'name']
+    profileFields: ['id', 'emails', 'name', 'displayName']
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        let user = await User.findOne({ email: profile.emails[0].value });
+        const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
+        if (!email) {
+            throw new Error('Email not provided by Facebook');
+        }
+
+        let user = await User.findOne({ email });
         if (!user) {
             user = new User({
-                name: profile.name.givenName + ' ' + profile.name.familyName,
-                email: profile.emails[0].value,
-                password: '',
+                name: `${profile.name.givenName} ${profile.name.familyName}`,
+                email,
+                password: '', // No password required
                 isVerified: true,
             });
             await user.save();
         }
         done(null, user);
     } catch (error) {
+        console.error('Error in Facebook Strategy:', error.message);
         done(error, null);
     }
 }));
