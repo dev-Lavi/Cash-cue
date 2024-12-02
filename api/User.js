@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken'); // For creating and verifying JWTs
 const passport = require('passport'); // Add Passport
 const nodemailer = require('nodemailer');
+require('dotenv').config();
 
 const JWT_SECRET = "your_jwt_secret"; // Replace with a strong secret key
 const JWT_EXPIRES_IN = "10h";
@@ -217,10 +218,18 @@ router.post('/signin', async (req, res) => {
             return res.json({ status: "FAILED", errorCode: 3004, message: "Invalid password!" });
         }
 
+         // Generate JWT Token
+         const token = jwt.sign(
+            { id: user._id, email: user.email }, // Payload
+            JWT_SECRET, // Secret key
+            { expiresIn: JWT_EXPIRES_IN } // Options
+        );
+
         return res.json({
             status: "SUCCESS",
             message: "Sign-in successful!",
-            data: user,
+            token, // Include the JWT token in the response
+            data: { id: user._id, name: user.name, email: user.email }, // Optional user data
         });
     } catch (error) {
         console.error(error);
@@ -272,7 +281,7 @@ router.post('/forgot-password', (req, res) => {
                     html: `
                         <p>You requested a password reset</p>
                         <p>Click the link below to reset your password:</p>
-                        <a href="${process.env.FRONTEND_URL}/reset-password/${token}user/reset-password/${resetToken}">Reset Password</a>
+                        <a href="${process.env.FRONTEND_URL}/reset-password/${resetToken}user/reset-password/${resetToken}">Reset Password</a>
                         <p>This link will expire in 15 minutes.</p>
                     `
                 };

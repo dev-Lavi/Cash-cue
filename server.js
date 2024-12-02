@@ -6,12 +6,12 @@ const express = require('express');
 const cors = require('cors'); // Import CORS
 const session = require('express-session');
 const passport = require('passport'); // Import Passport
+const ExpenseRouter = require('./api/expense');
 
 // Database connection
 require('./config/db'); 
 
 // Import necessary modules
-
 const app = express();
 const port = process.env.PORT || 3001;
 
@@ -40,9 +40,12 @@ console.log('User routes loaded');
 // Middleware for parsing JSON request bodies
 app.use(express.json());
 
+// Serve static files from the uploads directory
+app.use('/uploads', express.static('uploads'));
 
 // Set up routes
 app.use('/user', UserRouter);
+app.use('/expense', ExpenseRouter); // Expense routes
 
 // Default route for health check or debugging
 app.get('/', (req, res) => {
