@@ -16,7 +16,7 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(cors({
-    withcredentials: true,
+    origin: "*"
 })); 
 
 // Set up session middleware to handle OAuth session data
