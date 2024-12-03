@@ -18,7 +18,7 @@ const port = process.env.PORT || 3001;
 const cors = require('cors'); // Import CORS
 
 // Dynamic CORS configuration
-const allowedOrigins = FRONTEND_URL;
+const allowedOrigins = ['http://localhost:5173'];
 
 app.use(cors({
     origin: (origin, callback) => {
