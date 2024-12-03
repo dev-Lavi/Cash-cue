@@ -15,18 +15,6 @@ require('./config/db');
 const app = express();
 const port = process.env.PORT || 3001;
 
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests from the web frontend or no origin (for Flutter or server-side clients)
-        if (!origin || origin === 'http://localhost:5173') {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-}));
-
 app.use(cors({}));
 
 // Set up session middleware to handle OAuth session data
