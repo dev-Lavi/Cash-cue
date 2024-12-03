@@ -3,7 +3,7 @@ require('dotenv').config();
 require('./config/passport');
 
 const express = require('express');
-const cors = require('cors'); // Import CORS
+
 const session = require('express-session');
 const passport = require('passport'); // Import Passport
 const ExpenseRouter = require('./api/expense');
@@ -15,9 +15,8 @@ require('./config/db');
 const app = express();
 const port = process.env.PORT || 3001;
 
-app.use(cors({
-    credentials: true
-}));
+const cors = require('cors'); // Import CORS
+app.use(cors({}));
 
 // Set up session middleware to handle OAuth session data
 app.use(
