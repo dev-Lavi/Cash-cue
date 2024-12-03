@@ -27,6 +27,8 @@ app.use(cors({
     credentials: true,
 }));
 
+app.use(cors({}));
+
 // Set up session middleware to handle OAuth session data
 app.use(
     session({
