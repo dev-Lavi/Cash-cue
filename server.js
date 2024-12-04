@@ -17,21 +17,6 @@ const port = process.env.PORT || 3001;
 
 const cors = require('cors'); // Import CORS
 
-// Dynamic CORS configuration
-const allowedOrigins = ['http://localhost:5173'];
-
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (e.g., mobile apps) or from allowed origins
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true, // Allow cookies and authorization headers
-}));
-
 app.use(cors({}));
 
 // Set up session middleware to handle OAuth session data
