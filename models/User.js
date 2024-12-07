@@ -23,8 +23,9 @@ const UserSchema = new Schema({
     }, // Tracks which OAuth provider the user used
     oauthId: { type: String,  unique: true, sparse: true 
     }, // OAuth provider's unique ID for the user
-
-    // Transactions array replaces expenses
+    accountBalance: {type: Number,default: 0, // Store the user's current account balance
+    },
+    // Transactions array 
     transactions: [TransactionSchema],
 }, { timestamps: true }); // Automatically adds createdAt and updatedAt fields
 

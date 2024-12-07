@@ -7,6 +7,8 @@ const express = require('express');
 const session = require('express-session');
 const passport = require('passport'); // Import Passport
 const ExpenseRouter = require('./api/transaction');
+const HomeRouter = require('./api/homepage'); // Import the Home API Router
+const cookieParser = require('cookie-parser'); 
 
 // Database connection
 require('./config/db'); 
@@ -18,6 +20,9 @@ const port = process.env.PORT || 3001;
 const cors = require('cors'); // Import CORS
 
 app.use(cors({}));
+
+// Use cookie-parser to handle cookies (e.g., for refresh tokens)
+app.use(cookieParser());
 
 // Set up session middleware to handle OAuth session data
 app.use(
@@ -45,6 +50,7 @@ app.use('/uploads', express.static('uploads'));
 // Set up routes
 app.use('/user', UserRouter);
 app.use('/transaction', ExpenseRouter); // Expense routes
+app.use('/homepage', HomeRouter); // Home page-related routes
 
 // Default route for health check or debugging
 app.get('/', (req, res) => {
