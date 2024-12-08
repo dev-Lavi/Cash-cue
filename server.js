@@ -9,6 +9,7 @@ const passport = require('passport'); // Import Passport
 const ExpenseRouter = require('./api/transaction');
 const HomeRouter = require('./api/homepage'); // Import the Home API Router
 const SettingsRouter = require('./api/settings');
+const PredictRouter = require('./api/predict'); // Import the Predict API Router
 const cookieParser = require('cookie-parser'); 
 
 // Database connection
@@ -53,6 +54,7 @@ app.use('/user', UserRouter);
 app.use('/transaction', ExpenseRouter); // Expense routes
 app.use('/homepage', HomeRouter); // Home page-related routes
 app.use('/settings', SettingsRouter);
+app.use('/predict', PredictRouter); // Prediction-related routes
 
 // Default route for health check or debugging
 app.get('/', (req, res) => {
