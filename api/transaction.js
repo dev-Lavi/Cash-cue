@@ -300,7 +300,7 @@ router.get('/graph2', authenticate, async (req, res) => {
         for (let i = 0; i < 7; i++) {
             const date = new Date(istSevenDaysAgo);
             date.setDate(istSevenDaysAgo.getDate() + i);
-            const formattedDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            const formattedDate = `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}`; // Format as DD-MM
             totals[formattedDate] = { totalIncome: 0, totalExpense: 0 };
         }
 
@@ -308,7 +308,7 @@ router.get('/graph2', authenticate, async (req, res) => {
         user.transactions.forEach((transaction) => {
             const transactionDate = new Date(transaction.date);
             const istTransactionDate = new Date(transactionDate.getTime() + istOffset * 60 * 1000);
-            const formattedTransactionDate = istTransactionDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            const formattedTransactionDate = `${String(istTransactionDate.getDate()).padStart(2, '0')}-${String(istTransactionDate.getMonth() + 1).padStart(2, '0')}`; // Format as DD-MM
 
             // Check if the transaction date is within the last 7 days
             if (totals[formattedTransactionDate]) {
