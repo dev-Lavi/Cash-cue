@@ -206,8 +206,7 @@ router.delete('/delete/:expenseId', authenticate, async (req, res) => {
 });
 
 
-// Get all transactions of the current day for the authenticated user
-router.get('/graph1', authenticate, async (req, res) => {
+router.get('/graph1', authenticate, async (req, res) => {  
     try {
         // Find the authenticated user by their ID
         const user = await User.findById(req.user.id);
@@ -219,45 +218,50 @@ router.get('/graph1', authenticate, async (req, res) => {
             });
         }
 
-        // Get the current date in UTC
-        const today = new Date();
-        const utcToday = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+        // Get the current date and time in IST
+        const now = new Date();
+        const istOffset = 5 * 60 + 30; // IST offset in minutes
+        const istMidnight = new Date(now.getTime() + (istOffset * 60 * 1000));
+        istMidnight.setUTCHours(0, 0, 0, 0); // Set to 00:00 IST
 
-        // Filter transactions for the current day in UTC and map the required fields
-        const transactions = user.transactions
-            .filter(transaction => {
-                const transactionDate = new Date(transaction.date);
-                return (
-                    transactionDate.getUTCDate() === utcToday.getUTCDate() &&
-                    transactionDate.getUTCMonth() === utcToday.getUTCMonth() &&
-                    transactionDate.getUTCFullYear() === utcToday.getUTCFullYear()
-                );
-            })
-            .map(transaction => {
-                const transactionDate = new Date(transaction.date);
-                const hours = String(transactionDate.getUTCHours()).padStart(2, '0');
-                const minutes = String(transactionDate.getUTCMinutes()).padStart(2, '0');
+        // Filter transactions that occurred after 00:00 IST today
+        const todayTransactions = user.transactions.filter(transaction => {
+            const transactionDate = new Date(transaction.date); // Parse transaction date
+            return transactionDate >= istMidnight; // Compare with today's 00:00 IST timestamp
+        });
 
-                return {
-                    type: transaction.type, // Include only type (e.g., "Expense" or "Income")
-                    amount: transaction.amount, // Include the transaction amount
-                    time: `${hours}:${minutes}`, // Format time as HH:mm in UTC
-                };
-            });
+        // Format transactions for the frontend
+        const formattedTransactions = todayTransactions.map(transaction => {
+            const transactionDate = new Date(transaction.date);
+            const hours = String(transactionDate.getHours()).padStart(2, '0'); // IST hours
+            const minutes = String(transactionDate.getMinutes()).padStart(2, '0'); // IST minutes
 
-        // Respond with the filtered transactions
-        res.json({
+            return {
+                type: transaction.type, // Include type (e.g., "Expense" or "Income")
+                amount: transaction.amount, // Include the transaction amount
+                time: `${hours}:${minutes}`, // Format time as HH:mm in IST
+            };
+        });
+
+        // Respond with today's transactions
+        res.status(200).json({
             status: "SUCCESS",
-            transactions,
+            message: "Today's transactions fetched successfully.",
+            data: formattedTransactions,
         });
     } catch (error) {
-        console.error(error);
+        console.error('Error fetching transactions:', error.message);
+
         res.status(500).json({
             status: "FAILED",
-            message: "An error occurred while fetching transactions.",
+            message: "An error occurred while fetching today's transactions.",
         });
     }
 });
+
+
+
+
 
 //get weekly data
 router.get('/graph2', authenticate, async (req, res) => {
@@ -321,6 +325,87 @@ router.get('/graph2', authenticate, async (req, res) => {
             status: "SUCCESS",
             message: "Expense and income summary fetched successfully!",
             data: result,
+        });
+    } catch (error) {
+        console.error('Error fetching summary:', error.message);
+
+        // Handle errors gracefully
+        res.status(500).json({
+            status: "FAILED",
+            message: "An error occurred while fetching the summary.",
+        });
+    }
+});
+
+//last month transaction
+router.get('/graph3', authenticate, async (req, res) => {
+    try {
+        console.log('Fetching user data...');
+
+        // Fetch the user's transactions from the database
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            console.error('User not found.');
+            return res.status(404).json({
+                status: "FAILED",
+                message: "User not found.",
+            });
+        }
+
+        console.log('Processing transactions for the last 4 weeks...');
+
+        // Get today's date and calculate the start of the week (Sunday)
+        const today = new Date();
+        const currentDayOfWeek = today.getDay(); // 0 for Sunday, 1 for Monday, etc.
+        const startOfWeek = new Date(today - currentDayOfWeek * 24 * 60 * 60 * 1000);
+
+        // Define the start and end dates for the last 4 weeks
+        const weeks = Array.from({ length: 4 }, (_, i) => {
+            const end = new Date(startOfWeek - i * 7 * 24 * 60 * 60 * 1000);
+            const start = new Date(end - 6 * 24 * 60 * 60 * 1000);
+            return {
+                weekLabel: `Week ${4 - i}`,
+                start: start.toISOString().split('T')[0],
+                end: end.toISOString().split('T')[0],
+            };
+        });
+
+        // Initialize totals for each week
+        const weeklyTotals = weeks.map((week) => ({
+            weekLabel: week.weekLabel,
+            totalIncome: 0,
+            totalExpense: 0,
+        }));
+
+        // Process transactions and group by week
+        user.transactions.forEach((transaction) => {
+            const transactionDate = new Date(transaction.date);
+
+            // Check which week this transaction belongs to
+            for (let i = 0; i < weeks.length; i++) {
+                const week = weeks[i];
+                const startDate = new Date(week.start);
+                const endDate = new Date(week.end);
+
+                if (transactionDate >= startDate && transactionDate <= endDate) {
+                    if (transaction.type === 'Income') {
+                        weeklyTotals[i].totalIncome += transaction.amount;
+                    } else if (transaction.type === 'Expense') {
+                        weeklyTotals[i].totalExpense += transaction.amount;
+                    }
+                    break;
+                }
+            }
+        });
+
+        console.log('Summary for the last 4 weeks:', weeklyTotals);
+
+        // Respond with the calculated weekly totals
+        res.status(200).json({
+            status: "SUCCESS",
+            message: "Expense and income summary for the last 4 weeks fetched successfully!",
+            data: weeklyTotals,
         });
     } catch (error) {
         console.error('Error fetching summary:', error.message);
