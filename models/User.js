@@ -17,14 +17,11 @@ const UserSchema = new Schema({
     password: { type: String, required: function() { return !this.oauthProvider; 
         } // Password is required unless OAuth provider is used
     },
-    isVerified: { type: Boolean, default: false 
-    }, // Field for email verification
-    oauthProvider: { type: String, enum: ['google', 'facebook', 'twitter'], default: null 
-    }, // Tracks which OAuth provider the user used
-    oauthId: { type: String,  unique: true, sparse: true 
-    }, // OAuth provider's unique ID for the user
+    isVerified: { type: Boolean, default: false }, // Field for email verification
+    oauthProvider: { type: String, enum: ['google', 'facebook', 'twitter'], default: null }, // Tracks which OAuth provider the user used
+    oauthId: { type: String,  unique: true, sparse: true }, // OAuth provider's unique ID for the user
     accountBalance: {type: Number,default: 0, // Store the user's current account balance
-    },
+},
     // Transactions array 
     transactions: [TransactionSchema],
 }, { timestamps: true }); // Automatically adds createdAt and updatedAt fields
