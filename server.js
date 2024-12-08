@@ -8,6 +8,7 @@ const session = require('express-session');
 const passport = require('passport'); // Import Passport
 const ExpenseRouter = require('./api/transaction');
 const HomeRouter = require('./api/homepage'); // Import the Home API Router
+const SettingsRouter = require('./api/settings');
 const cookieParser = require('cookie-parser'); 
 
 // Database connection
@@ -51,6 +52,7 @@ app.use('/uploads', express.static('uploads'));
 app.use('/user', UserRouter);
 app.use('/transaction', ExpenseRouter); // Expense routes
 app.use('/homepage', HomeRouter); // Home page-related routes
+app.use('/settings', SettingsRouter);
 
 // Default route for health check or debugging
 app.get('/', (req, res) => {
