@@ -298,7 +298,7 @@ router.get('/graph2', authenticate, async (req, res) => {
         for (let i = 0; i < 7; i++) {
             const date = new Date(utcSevenDaysAgo);
             date.setDate(utcSevenDaysAgo.getDate() + i);
-            const formattedDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            const formattedDate = `${String(date.getUTCDate()).padStart(2, '0')}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`; // Format as DD-MM
             totals[formattedDate] = { totalIncome: 0, totalExpense: 0 };
         }
 
@@ -307,7 +307,7 @@ router.get('/graph2', authenticate, async (req, res) => {
         // Process transactions to calculate totals
         user.transactions.forEach((transaction) => {
             const transactionDate = new Date(transaction.date);
-            const formattedTransactionDate = transactionDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            const formattedTransactionDate = `${String(transactionDate.getUTCDate()).padStart(2, '0')}-${String(transactionDate.getUTCMonth() + 1).padStart(2, '0')}`; // Format as DD-MM
 
             console.log('Processing transaction:', transaction);
             console.log('Formatted Transaction Date (UTC):', formattedTransactionDate);
