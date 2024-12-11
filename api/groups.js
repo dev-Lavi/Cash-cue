@@ -4,16 +4,16 @@ const Group = require('../models/group');
 const User = require('../models/User');
 const authenticate = require('../middleware/authenticate');
 
-// Create a new group
+// Create a new group 
 router.post('/create', authenticate, async (req, res) => {
     try {
         const { title, description, members } = req.body;
 
         // Validate input
-        if (!title || !members || !Array.isArray(members)) {
+        if (!title || !description || !members || !Array.isArray(members)) {
             return res.status(400).json({
                 status: "FAILED",
-                message: "Title and members are required, and members must be an array of email addresses.",
+                message: "Title, description, and members are required, and members must be an array of email addresses.",
             });
         }
 
@@ -30,10 +30,10 @@ router.post('/create', authenticate, async (req, res) => {
             });
         }
 
-        // Prepare members with user IDs
+        // Prepare members with email and name
         const memberData = userRecords.map(user => ({
-            userId: user._id,
             email: user.email,
+            name: user.name,  // Assuming User model contains a 'name' field
         }));
 
         // Create the group
@@ -58,6 +58,7 @@ router.post('/create', authenticate, async (req, res) => {
         });
     }
 });
+
 
 
 

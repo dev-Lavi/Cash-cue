@@ -1,4 +1,4 @@
-const mongoose = require('mongoose'); 
+const mongoose = require('mongoose');  
 const Schema = mongoose.Schema;
 
 // Define the Group schema
@@ -8,9 +8,8 @@ const GroupSchema = new mongoose.Schema(
         description: { type: String, required: true }, // Group description
         members: [
             {
-                userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Member's user ID
-                email: { type: String, required: true }, // Member's email address
-                role: { type: String, enum: ['admin', 'member'], default: 'member' }, // Role in the group
+                email: { type: String, required: true, unique: true }, // Member's email address
+                name: { type: String, required: true }, // Member's name
             },
         ],
         transactions: [
@@ -18,12 +17,10 @@ const GroupSchema = new mongoose.Schema(
                 description: { type: String, required: true }, // Transaction description
                 amount: { type: Number, required: true }, // Transaction amount
                 date: { type: Date, default: Date.now }, // Date of the transaction
-                splitType: { type: String, enum: ['equally', 'unequally', 'percentage'], required: true }, // Split type
-                initiatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Initiator
-                status: { type: String, enum: ['pending', 'completed'], default: 'pending' }, // Transaction status
+                initiatedBy: { type: String, required: true }, // Initiator's email
                 splitDetails: [
                     {
-                        member: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Member ID
+                        memberEmail: { type: String, required: true }, // Member's email
                         share: { type: Number, required: true }, // Share of the transaction amount
                         paid: { type: Boolean, default: false }, // Whether the member has paid their share
                     },
@@ -38,19 +35,18 @@ const GroupSchema = new mongoose.Schema(
 GroupSchema.pre('save', function (next) {
     // For each transaction, calculate the equal split among members except for the initiator
     this.transactions.forEach((transaction) => {
-        if (transaction.splitType === 'equally') {
-            const nonInitiatorMembers = this.members.filter(member => member.userId.toString() !== transaction.initiatedBy.toString());
+        // Find members who are not the initiator
+        const nonInitiatorMembers = this.members.filter(member => member.email !== transaction.initiatedBy);
 
-            // Calculate equal share for each non-initiating member
-            const equalShare = transaction.amount / nonInitiatorMembers.length;
+        // Calculate equal share for each non-initiating member
+        const equalShare = transaction.amount / nonInitiatorMembers.length;
 
-            // Add split details for each non-initiating member
-            transaction.splitDetails = nonInitiatorMembers.map(member => ({
-                member: member.userId,
-                share: equalShare,
-                paid: false, // Initially, no one has paid
-            }));
-        }
+        // Add split details for each non-initiating member
+        transaction.splitDetails = nonInitiatorMembers.map(member => ({
+            memberEmail: member.email,
+            share: equalShare,
+            paid: false, // Initially, no one has paid
+        }));
     });
 
     next();
