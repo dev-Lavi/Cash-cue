@@ -27,7 +27,7 @@ const GroupSchema = new mongoose.Schema(
                         share: { type: Number, required: true }, // Share of the transaction amount
                         paid: { type: Boolean, default: false }, // Whether the member has paid their share
                     },
-                ],x
+                ],
             },
         ],
     },
