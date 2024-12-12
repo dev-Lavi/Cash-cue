@@ -32,7 +32,7 @@ router.get('/expense', authenticate, async (req, res) => {
         }
 
         // Limit to 100 transactions for testing
-        const MAX_TRANSACTIONS = 100;
+        const MAX_TRANSACTIONS = 5;
         const payload = expenseTransactions.slice(0, MAX_TRANSACTIONS);
 
         console.log('Sending data to ML API...', payload);
