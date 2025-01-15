@@ -24,6 +24,14 @@ const UserSchema = new Schema({
 },
     // Transactions array 
     transactions: [TransactionSchema],
+    otp: { 
+        type: String, 
+        required: false // OTP is not always required
+    },
+    otpExpiry: { 
+        type: Date, 
+        required: false // Store the expiry time of the OTP
+    }
 }, { timestamps: true }); // Automatically adds createdAt and updatedAt fields
 
 const User = mongoose.model('User', UserSchema);
