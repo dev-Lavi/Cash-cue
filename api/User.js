@@ -260,7 +260,7 @@ router.post('/signin', async (req, res) => {
 });
 
 
-// Forgot Password: Send OTP
+// Step 1: Forgot Password - Send OTP
 router.post("/forgot-password", async (req, res) => {
     const { email } = req.body;
 
@@ -286,17 +286,18 @@ router.post("/forgot-password", async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
         const otpExpiry = Date.now() + OTP_EXPIRY_TIME;
 
-        // Update user with OTP and expiry time
+        // Store OTP and expiry in DB
         user.otp = otp;
         user.otpExpiry = otpExpiry;
+        user.otpVerified = false; // Ensure verification happens first
         await user.save();
 
         // Send OTP via email
         const transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
-                user: process.env.EMAIL, // Your email
-                pass: process.env.EMAIL_PASSWORD, // Your email password
+                user: process.env.EMAIL,
+                pass: process.env.EMAIL_PASSWORD,
             },
         });
 
@@ -315,7 +316,7 @@ router.post("/forgot-password", async (req, res) => {
 
         res.json({
             status: "SUCCESS",
-            message: "OTP sent to your email. Please use it to reset your password.",
+            message: "OTP sent to your email. Please verify before resetting your password.",
         });
     } catch (error) {
         console.error(error);
@@ -327,30 +328,21 @@ router.post("/forgot-password", async (req, res) => {
     }
 });
 
-// Reset Password: Verify OTP and Update Password
-router.post("/reset-password", async (req, res) => {
-    const { email, otp, newPassword } = req.body;
+// Step 2: Verify OTP
+router.post("/verify-otp1", async (req, res) => {
+    const { email, otp } = req.body;
 
-    if (!email || !otp || !newPassword) {
+    if (!email || !otp) {
         return res.json({
             status: "FAILED",
             errorCode: 5001,
-            message: "All fields (email, OTP, and new password) are required!",
-        });
-    }
-
-    // Password validation
-    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
-    if (!passwordRegex.test(newPassword)) {
-        return res.json({
-            status: "FAILED",
-            errorCode: 5002,
-            message: "Password must be at least 8 characters long and include at least one number and one symbol!",
+            message: "Email and OTP are required!",
         });
     }
 
     try {
         const user = await User.findOne({ email });
+
         if (!user) {
             return res.json({
                 status: "FAILED",
@@ -359,7 +351,6 @@ router.post("/reset-password", async (req, res) => {
             });
         }
 
-        // Check OTP validity
         if (user.otp !== otp || user.otpExpiry < Date.now()) {
             return res.json({
                 status: "FAILED",
@@ -368,13 +359,72 @@ router.post("/reset-password", async (req, res) => {
             });
         }
 
+        // Mark OTP as verified
+        user.otpVerified = true;
+        await user.save();
+
+        res.json({
+            status: "SUCCESS",
+            message: "OTP verified successfully. You can now reset your password.",
+        });
+    } catch (error) {
+        console.error(error);
+        res.json({
+            status: "FAILED",
+            errorCode: 5005,
+            message: "An error occurred during OTP verification!",
+        });
+    }
+});
+
+// Step 3: Reset Password (Only if OTP is verified)
+router.post("/reset-password", async (req, res) => {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+        return res.json({
+            status: "FAILED",
+            errorCode: 6001,
+            message: "Email and new password are required!",
+        });
+    }
+
+    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+        return res.json({
+            status: "FAILED",
+            errorCode: 6002,
+            message: "Password must be at least 8 characters long and include at least one number and one symbol!",
+        });
+    }
+
+    try {
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.json({
+                status: "FAILED",
+                errorCode: 6003,
+                message: "No user found with this email!",
+            });
+        }
+
+        if (!user.otpVerified) {
+            return res.json({
+                status: "FAILED",
+                errorCode: 6004,
+                message: "OTP verification is required before resetting the password!",
+            });
+        }
+
         // Hash the new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        // Update password and clear OTP fields
+        // Update password and clear OTP data
         user.password = hashedPassword;
         user.otp = null;
         user.otpExpiry = null;
+        user.otpVerified = false; // Reset flag
         await user.save();
 
         res.json({
@@ -385,7 +435,7 @@ router.post("/reset-password", async (req, res) => {
         console.error(error);
         res.json({
             status: "FAILED",
-            errorCode: 5005,
+            errorCode: 6005,
             message: "An error occurred while resetting the password!",
         });
     }
