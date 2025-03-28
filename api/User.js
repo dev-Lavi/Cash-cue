@@ -8,7 +8,7 @@ const otpStore = new Map(); // Store OTPs temporarily
 require('dotenv').config();
 
 const JWT_SECRET = "your_jwt_secret"; // Replace with a strong secret key
-const JWT_EXPIRES_IN = "15m";
+const JWT_EXPIRES_IN = "1m";
 const OTP_EXPIRY_TIME = 15 * 60 * 1000; // 15 minutes
 const User = require('./../models/User');
 
@@ -172,7 +172,7 @@ router.post('/verify-otp', async (req, res) => {
         otpStore.delete(email);
 
         // Generate Tokens
-        const accessToken = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: "15m" });
+        const accessToken = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
         const refreshToken = jwt.sign({ id: newUser._id }, process.env.REFRESH_SECRET, { expiresIn: "7d" });
 
         return res.json({
@@ -200,7 +200,7 @@ router.post('/refresh-token', (req, res) => {
 
     try {
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
-        const accessToken = jwt.sign({ id: decoded.id }, process.env.JWT_SECRET, { expiresIn: "15m" });
+        const accessToken = jwt.sign({ id: decoded.id }, process.env.JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
         return res.json({
             status: "SUCCESS",
@@ -240,7 +240,7 @@ router.post('/signin', async (req, res) => {
         }
 
         // Generate Tokens
-        const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "15m" });
+        const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
         const refreshToken = jwt.sign({ id: user._id }, process.env.REFRESH_SECRET, { expiresIn: "7d" });
 
         return res.json({
